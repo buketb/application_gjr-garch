@@ -1,0 +1,108 @@
+data(spyreal)
+library(rugarch)
+require(xts)
+#open_to_close and rk_parzen sample regressions:
+specgjr11 = ugarchspec(mean.model = list(armaOrder = c(0, 0), include.mean = FALSE), variance.model = list(model = 'gjrGARCH', garchOrder = c(1, 1)))
+fitgjr11 = ugarchfit(specgjr11, spyreal[, 1]*100, solver = 'hybrid')
+
+specgjr12 = ugarchspec(mean.model = list(armaOrder = c(0, 0), include.mean = FALSE), variance.model = list(model = 'gjrGARCH', garchOrder = c(1, 2)))
+fitgjr12 = ugarchfit(specgjr12, spyreal[, 1]*100, solver = 'hybrid')
+
+specgjr21 = ugarchspec(mean.model = list(armaOrder = c(0, 0), include.mean = FALSE), variance.model = list(model = 'gjrGARCH', garchOrder = c(2, 1)))
+fitgjr21 = ugarchfit(specgjr21, spyreal[, 1]*100, solver = 'hybrid')
+
+specgjr22 = ugarchspec(mean.model = list(armaOrder = c(0, 0), include.mean = FALSE), variance.model = list(model = 'gjrGARCH', garchOrder = c(2, 2)))
+fitgjr22 = ugarchfit(specgjr22, spyreal[, 1]*100, solver = 'hybrid')
+
+#in-sample estimations:
+fitingjr11 = ugarchfit(specgjr11,out.sample = 167, spyreal[, 1]*100, solver = 'hybrid')
+
+fitingjr12 = ugarchfit(specgjr12,out.sample = 167, spyreal[, 1]*100, solver = 'hybrid')
+
+fitingjr21 = ugarchfit(specgjr21, out.sample = 167, spyreal[, 1]*100, solver = 'hybrid')
+
+fitingjr22 = ugarchfit(specgjr22,out.sample = 167, spyreal[, 1]*100, solver = 'hybrid')
+
+#GJR out-of-sample regressions:
+
+specfgjr11 = specgjr11
+setfixed(specfgjr11) <- as.list(coef(fitingjr11)) 
+
+specfgjr12 = specgjr12
+setfixed(specfgjr12) <- as.list(coef(fitingjr12)) 
+
+specfgjr21 = specgjr21
+setfixed(specfgjr21) <- as.list(coef(fitingjr21)) 
+
+specfgjr22 = specgjr22
+setfixed(specfgjr22) <- as.list(coef(fitingjr22)) 
+
+#out-of-sample forecasts:
+#(all ugarchfilter functions in this script is for out-of-sample static forecasts
+#thus in all filtered ones last 167 results reprenst static out-of-sample regressions 
+#based on the coefficients from in-sample regressions)
+
+filtgjr11 = ugarchfilter(specfgjr11, data = spyreal[, 1] * 100, n.old = nrow(spyreal) - 167)
+
+filtgjr12 = ugarchfilter(specfgjr12, data = spyreal[, 1] * 100, n.old = nrow(spyreal) - 167)
+
+filtgjr21 = ugarchfilter(specfgjr21, data = spyreal[, 1] * 100, n.old = nrow(spyreal) - 167)
+
+filtgjr22 = ugarchfilter(specfgjr22, data = spyreal[, 1] * 100, n.old = nrow(spyreal) - 167)
+
+
+
+#GJR n-step ahead forecasts:
+#1-step ahead forecasts:
+forcgjr11 = ugarchforecast(specfgjr11, n.ahead = 1, n.roll = 166, 
+                        data = spyreal[, 1] * 100, out.sample = 166)
+                    
+forcgjr12 = ugarchforecast(specfgjr12, n.ahead = 1, n.roll = 166, 
+                        data = spyreal[, 1] * 100, out.sample = 166)
+                       
+forcgjr21 = ugarchforecast(specfgjr21, n.ahead = 1, n.roll = 166, 
+                        data = spyreal[, 1] * 100, out.sample = 166)
+
+forcgjr22 = ugarchforecast(specfgjr22, n.ahead = 1, n.roll = 166, 
+                        data = spyreal[, 1] * 100, out.sample = 166)
+
+
+#22-step ahead forecasts:
+f22_gjr11 = ugarchforecast(specfgjr11, n.ahead = 22, n.roll = 144, 
+                           data = spyreal[, 1] * 100, out.sample = 166)
+
+f22_gjr12 = ugarchforecast(specfgjr12, n.ahead = 22, n.roll = 144, 
+                           data = spyreal[, 1] * 100, out.sample = 166)
+
+f22_gjr21 = ugarchforecast(specfgjr21, n.ahead = 22, n.roll = 144, 
+                           data = spyreal[, 1] * 100, out.sample = 166)
+
+f22_gjr22 = ugarchforecast(specfgjr22, n.ahead = 22, n.roll = 144, 
+                           data = spyreal[, 1] * 100, out.sample = 166)
+                           
+                           
+                           
+                           
+  #sample estimations and out-of-sample forecasts:
+  
+sigmaforcgjr11<- as.numeric(forcgjr11@forecast$sigmaFor)
+plot(sigmaforcgjr11, type="l",cex.lab=0.7,cex.axis=0.8, col="orchid",xlab="Index",lty=1,main="Out-of-sample Forecasts vs Sample Forecasts of GJR(1,1)", cex.main=0.8,ylab="Sigma",lwd=2, ylim=c(0,max(sigmaforcrg11,fitrg11@fit$sigma)))
+lines(tail(fitgjr11@fit$sigma, n=167),lty=5,lwd=2, type="l",col="green")
+legend('topright', c('Out-of-sample', 'Sample'), cex = 0.7, bty="n", lty=c(1,5), col=c("orchid", "green"), lwd=2)
+
+
+sigmaforcgjr12<- as.numeric(forcgjr12@forecast$sigmaFor)
+plot(sigmaforcgjr12, type="l",cex.lab=0.7,cex.axis=0.8, col="orchid",xlab="Index",lty=1,main="Out-of-sample Forecasts vs Sample Forecasts of GJR(1,2)", cex.main=0.8,ylab="Sigma",lwd=2, ylim=c(0,max(sigmaforcrg11,fitrg11@fit$sigma)))
+lines(tail(fitgjr12@fit$sigma, n=167),lty=5,lwd=2, type="l",col="green")
+legend('topright', c('Out-of-sample', 'Sample'), cex = 0.7, bty="n", lty=c(1,5), col=c("orchid", "green"), lwd=2)
+
+sigmaforcgjr21<- as.numeric(forcgjr12@forecast$sigmaFor)
+plot(sigmaforcgjr21, type="l",cex.lab=0.7,cex.axis=0.8, col="orchid",xlab="Index",lty=1,main="Out-of-sample Forecasts vs Sample Forecasts of GJR(2,1)", cex.main=0.8,ylab="Sigma",lwd=2, ylim=c(0,max(sigmaforcrg11,fitrg11@fit$sigma)))
+lines(tail(fitgjr21@fit$sigma, n=167),lty=5,lwd=2, type="l",col="green")
+legend('topright', c('Out-of-sample', 'Sample'), cex = 0.7, bty="n", lty=c(1,5), col=c("orchid", "green"), lwd=2)
+
+sigmaforcgjr22<- as.numeric(forcgjr12@forecast$sigmaFor)
+plot(sigmaforcgjr22, type="l",cex.lab=0.7,cex.axis=0.8, col="orchid",xlab="Index",lty=1,main="Out-of-sample Forecasts vs Sample Forecasts of GJR(2,2)", cex.main=0.8,ylab="Sigma",lwd=2, ylim=c(0,max(sigmaforcrg11,fitrg11@fit$sigma)))
+lines(tail(fitgjr22@fit$sigma, n=167),lty=5,lwd=2, type="l",col="green")
+legend('topright', c('Out-of-sample', 'Sample'), cex = 0.7, bty="n", lty=c(1,5), col=c("orchid", "green"), lwd=2)
+
